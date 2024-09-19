@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 void main() {
@@ -34,27 +36,47 @@ class _MyHomePageState extends State<MyHomePage> {
   double _distance = 100;
   double _phase = 360;
   double _freq = 1;
+  static const double waveSpeedOnAir = 343.8; // m/s
+
+  TextEditingController controller1 = TextEditingController(text:'100.0');
+  TextEditingController controller2 = TextEditingController(text:'360.0');
+  TextEditingController controller3 = TextEditingController(text:'1');
 
   void setDist(double value) {
-
+    setState(() {
+      _distance = value;
+      double distancePercentage = _phase / 360;
+      double time = ((_distance / 100) / distancePercentage) / waveSpeedOnAir;
+      _freq = 1 / time;
+    });
   }
 
   void setPhase(double value) {
-
+    setState(() {
+      _phase = value;
+      double distancePercentage = _phase / 360;
+      double time = ((_distance / 100) / distancePercentage) / waveSpeedOnAir;
+      _freq = 1 / time;
+    });
   }
 
   void setFreq(double value) {
+    setState(() {
+      _freq = value;
+      double T = 1 / _freq;
+      double fullDist = waveSpeedOnAir * T;
 
+      double distancePercentage = _phase / 360;
+      _distance = fullDist * distancePercentage * 100;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    controller1.text = '$_distance';
+    controller2.text = '$_phase';
+    controller3.text = '$_freq';
+
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.primary,
@@ -71,44 +93,88 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: TextFormField(
                   decoration: const InputDecoration(
                       labelText: 'Odległość', suffixText: 'cm'),
-                  initialValue: '100.0',
                   validator: (String? value) {
                     if (value == null) {
                       return null;
                     }
 
                     var reg = RegExp('^\\d+([\\.\\,]\\d+)?\$');
-                    return reg.hasMatch(value) ? value : null;
+                    return reg.hasMatch(value) ? double.parse(value) > 0 ? value : null : null;
                   },
+                  onChanged: (String? value){
+                    if(value == null) {
+                      return;
+                    }
+
+                    double? parsed = double.tryParse(value);
+                    if(parsed == null) {
+                      return;
+                    }
+
+                    setDist(parsed);
+                  },
+                  controller: controller1,
                 )),
             Container(
                 margin: const EdgeInsets.all(30),
                 child: TextFormField(
                   decoration: const InputDecoration(
                       labelText: 'Kąt przesunięcia fazy', suffixText: '°'),
-                  initialValue: '360.0',
                   validator: (String? value) {
                     if (value == null) {
                       return null;
                     }
 
                     var reg = RegExp('^\\d+([\\.\\,]\\d+)?\$');
-                    return reg.hasMatch(value) ? value : null;
+                    if(!reg.hasMatch(value)) {
+                      return null;
+                    }
+
+                    double phase = double.parse(value);
+
+                    phase = max(phase, 1);
+                    phase = phase % 360.0;
+                    return phase.toString();
                   },
+                  onChanged: (String? value){
+                    if(value == null) {
+                      return;
+                    }
+
+                    double? parsed = double.tryParse(value);
+                    if(parsed == null) {
+                      return;
+                    }
+
+                    setPhase(parsed);
+                  },
+                  controller: controller2,
                 )),
             Container(
                 margin: const EdgeInsets.all(30),
                 child: TextFormField(
                   decoration: const InputDecoration(
                       labelText: 'Częstotliwość', suffixText: 'Hz'),
-                  initialValue: '1',
                   validator: (String? value) {
                     if (value == null) {
                       return null;
                     }
 
                     var reg = RegExp('^\\d+([\\.\\,]\\d+)?\$');
-                    return reg.hasMatch(value) ? value : null;
+                    return reg.hasMatch(value) ? double.parse(value) > 0 ? value : null : null;
+                  },
+                  controller: controller3,
+                  onChanged: (String? value){
+                    if(value == null) {
+                      return;
+                    }
+
+                    double? parsed = double.tryParse(value);
+                    if(parsed == null) {
+                      return;
+                    }
+
+                    setFreq(parsed);
                   },
                 )),
           ],
